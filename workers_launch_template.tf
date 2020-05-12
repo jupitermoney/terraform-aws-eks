@@ -181,18 +181,18 @@ resource "aws_autoscaling_group" "workers_launch_template" {
   tags = concat(
     [
       {
-        "key" = "Name"
-        "value" = "${aws_eks_cluster.this[0].name}-${lookup(
+        key = "Name"
+        value = "${aws_eks_cluster.this[0].name}-${lookup(
           var.worker_groups_launch_template[count.index],
           "name",
           count.index,
         )}-eks_asg"
-        "propagate_at_launch" = true
+        propagate_at_launch = true
       },
       {
-        "key"                 = "kubernetes.io/cluster/${aws_eks_cluster.this[0].name}"
-        "value"               = "owned"
-        "propagate_at_launch" = true
+        key = "kubernetes.io/cluster/${aws_eks_cluster.this[0].name}"
+        value = "owned"
+        propagate_at_launch = true
       },
     ],
     local.asg_tags,
@@ -229,7 +229,7 @@ resource "aws_launch_template" "workers_launch_template" {
       local.workers_group_defaults["eni_delete"],
     )
     security_groups = flatten([
-      local.worker_security_group_id,
+      aws_eks_cluster.this[0].vpc_config[0].cluster_security_group_id,
       var.worker_additional_security_group_ids,
       lookup(
         var.worker_groups_launch_template[count.index],

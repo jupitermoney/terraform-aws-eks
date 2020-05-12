@@ -119,7 +119,7 @@ output "workers_launch_template_latest_versions" {
 
 output "worker_security_group_id" {
   description = "Security group ID attached to the EKS workers."
-  value       = local.worker_security_group_id
+  value       = aws_launch_template.workers_launch_template.*.vpc_security_group_ids
 }
 
 output "worker_iam_instance_profile_arns" {

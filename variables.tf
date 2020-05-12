@@ -108,12 +108,6 @@ variable "worker_groups_launch_template" {
   default     = []
 }
 
-variable "worker_security_group_id" {
-  description = "If provided, all workers will be attached to this security group. If not given, a security group will be created with necessary ingress/egress to work with the EKS cluster."
-  type        = string
-  default     = ""
-}
-
 variable "worker_ami_name_filter" {
   description = "Name filter for AWS EKS worker AMI. If not provided, the latest official AMI for the specified 'cluster_version' is used."
   type        = string

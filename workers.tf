@@ -105,19 +105,19 @@ resource "aws_autoscaling_group" "workers" {
   tags = concat(
     [
       {
-        "key"                 = "Name"
-        "value"               = "${aws_eks_cluster.this[0].name}-${lookup(var.worker_groups[count.index], "name", count.index)}-eks_asg"
-        "propagate_at_launch" = true
+        key = "Name"
+        value = "${aws_eks_cluster.this[0].name}-${lookup(var.worker_groups[count.index], "name", count.index)}-eks_asg"
+        propagate_at_launch = true
       },
       {
-        "key"                 = "kubernetes.io/cluster/${aws_eks_cluster.this[0].name}"
-        "value"               = "owned"
-        "propagate_at_launch" = true
+        key = "kubernetes.io/cluster/${aws_eks_cluster.this[0].name}"
+        value = "owned"
+        propagate_at_launch = true
       },
       {
-        "key"                 = "k8s.io/cluster/${aws_eks_cluster.this[0].name}"
-        "value"               = "owned"
-        "propagate_at_launch" = true
+        key = "k8s.io/cluster/${aws_eks_cluster.this[0].name}"
+        value = "owned"
+        propagate_at_launch = true
       },
     ],
     local.asg_tags,
@@ -143,7 +143,7 @@ resource "aws_launch_configuration" "workers" {
     local.workers_group_defaults["public_ip"],
   )
   security_groups = flatten([
-    local.worker_security_group_id,
+    local.workers_group_defaults["worker_security_group_id"],
     var.worker_additional_security_group_ids,
     lookup(
       var.worker_groups[count.index],
@@ -283,64 +283,8 @@ resource "aws_security_group" "workers" {
   )
 }
 
-resource "aws_security_group_rule" "workers_egress_internet" {
-  count             = var.worker_create_security_group && var.create_eks ? 1 : 0
-  description       = "Allow nodes all egress to the Internet."
-  protocol          = "-1"
-  security_group_id = local.worker_security_group_id
-  cidr_blocks       = ["0.0.0.0/0"]
-  from_port         = 0
-  to_port           = 0
-  type              = "egress"
-}
-
-resource "aws_security_group_rule" "workers_ingress_self" {
-  count                    = var.worker_create_security_group && var.create_eks ? 1 : 0
-  description              = "Allow node to communicate with each other."
-  protocol                 = "-1"
-  security_group_id        = local.worker_security_group_id
-  source_security_group_id = local.worker_security_group_id
-  from_port                = 0
-  to_port                  = 65535
-  type                     = "ingress"
-}
-
-resource "aws_security_group_rule" "workers_ingress_cluster" {
-  count                    = var.worker_create_security_group && var.create_eks ? 1 : 0
-  description              = "Allow workers pods to receive communication from the cluster control plane."
-  protocol                 = "tcp"
-  security_group_id        = local.worker_security_group_id
-  source_security_group_id = local.cluster_security_group_id
-  from_port                = var.worker_sg_ingress_from_port
-  to_port                  = 65535
-  type                     = "ingress"
-}
-
-resource "aws_security_group_rule" "workers_ingress_cluster_kubelet" {
-  count                    = var.worker_create_security_group && var.create_eks ? var.worker_sg_ingress_from_port > 10250 ? 1 : 0 : 0
-  description              = "Allow workers Kubelets to receive communication from the cluster control plane."
-  protocol                 = "tcp"
-  security_group_id        = local.worker_security_group_id
-  source_security_group_id = local.cluster_security_group_id
-  from_port                = 10250
-  to_port                  = 10250
-  type                     = "ingress"
-}
-
-resource "aws_security_group_rule" "workers_ingress_cluster_https" {
-  count                    = var.worker_create_security_group && var.create_eks ? 1 : 0
-  description              = "Allow pods running extension API servers on port 443 to receive communication from cluster control plane."
-  protocol                 = "tcp"
-  security_group_id        = local.worker_security_group_id
-  source_security_group_id = local.cluster_security_group_id
-  from_port                = 443
-  to_port                  = 443
-  type                     = "ingress"
-}
-
 resource "aws_iam_role" "workers" {
   count                 = var.manage_worker_iam_resources && var.create_eks ? 1 : 0
-  name_prefix           = var.workers_role_name != "" ? null : aws_eks_cluster.this[0].name
   name                  = var.workers_role_name != "" ? var.workers_role_name : null
   assume_role_policy    = data.aws_iam_policy_document.workers_assume_role_policy.json
   permissions_boundary  = var.permissions_boundary
