@@ -190,8 +190,8 @@ resource "aws_autoscaling_group" "workers_launch_template" {
         propagate_at_launch = true
       },
       {
-        key = "kubernetes.io/cluster/${aws_eks_cluster.this[0].name}"
-        value = "owned"
+        key                 = "kubernetes.io/cluster/${aws_eks_cluster.this[0].name}"
+        value               = "owned"
         propagate_at_launch = true
       },
     ],
@@ -206,6 +206,26 @@ resource "aws_autoscaling_group" "workers_launch_template" {
   lifecycle {
     create_before_destroy = true
     ignore_changes        = [desired_capacity]
+  }
+}
+
+data "null_data_source" "worker_security_groups" {
+  count = var.create_eks ? (local.worker_group_launch_template_count) : 0
+  inputs = {
+    worker = lookup(
+      var.worker_groups_launch_template[count.index],
+      "name",
+      count.index,
+    ),
+    security_group = join(",", flatten([
+      aws_eks_cluster.this[0].vpc_config[0].cluster_security_group_id,
+      var.worker_additional_security_group_ids,
+      lookup(
+        var.worker_groups_launch_template[count.index],
+        "additional_security_group_ids",
+        local.workers_group_defaults["additional_security_group_ids"],
+      ),
+    ]))
   }
 }
 
