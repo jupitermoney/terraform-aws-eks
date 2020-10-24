@@ -122,7 +122,9 @@ output "workers_launch_template_latest_versions" {
 
 output "worker_security_group_id" {
   description = "Security group ID attached to the EKS workers."
-  value       = local.worker_security_group_id
+  value = { for pair in data.null_data_source.worker_security_groups.*.outputs :
+    pair["worker"] => split(",", pair["security_group"])
+  }
 }
 
 output "worker_iam_instance_profile_arns" {
